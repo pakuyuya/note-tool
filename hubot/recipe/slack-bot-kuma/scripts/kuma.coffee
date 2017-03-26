@@ -5,7 +5,6 @@ GitHubApi = require('github')
 
 github = new GitHubApi({
     "protocol": "https"
-#    "host" : "github.my-GHE-enabled-company.com"
     "host": "api.github.com"
 #    "pathPrefix": "/api/v3"
     "headers": 
@@ -33,14 +32,15 @@ module.exports = (robot) ->
 
 # 呼ばれたか判定
 isCall = (msg) ->
-  msg.match(/^(くまー?|kuma)([\s　]|$)/)
+  msg.match(/^(くまー?|kuma)([\s、,]|$)/)
 
 
 # コマンドをディスパッチ
 dispatch = (res, msg) ->
-  tokens = msg.split(/\s+/)
+  tokens = msg.split(/[\s、,]+/)
 
-  console.log(tokens)
+  if (_debug)
+    console.log(tokens)
   
   if tokens.lenght < 2
     noOrder(res, tokens)
@@ -50,20 +50,27 @@ dispatch = (res, msg) ->
     when "日本語でおｋ"
       getChisei(res, tokens)
     
+    when "すごーい！"
+      getYasei(res, tokens)
+    when "森へお帰り"
+      getYasei(res, tokens)
+    when "しゃけ"
+      getYasei(res, tokens)
     when "ｸﾏｰ"
       getYasei(res, tokens)
     
+    when "pr"
+      execPullRequest(res, tokens)
     when "ぷるりく"
       execPullRequest(res, tokens)
     when "プルリク"
       execPullRequest(res, tokens)
-    when "pullreq"
-      execPullRequest(res, tokens)
-    when "pullrequest"
-      execPullRequest(res, tokens)
+    
+    when "debug"
+      toggleDebug(res, tokens)
     
     else
-      noUnderstand(res, tokens)
+      noUnderstand(res)
 
 # ユーティリティ：話す
 talk = (res, yaseiTalk, chiseiTalk) ->
@@ -76,11 +83,11 @@ error = (res, reason) ->
 
 # コマンド：コマンドがない
 noOrder = (res, tokens) ->
-  talk(res, "ｸﾏ?", "クマー")
+  talk(res, "ｸﾏ", "クマー")
 
 
 # コマンド：コマンドがわからない
-noUnderstand = (res, tokens) ->
+noUnderstand = (res) ->
   talk(res, "ｸﾏ?", "コマンドが分からないクマー　リファレンス見ろクマ")
 
 
@@ -95,78 +102,202 @@ getYasei = (res, tokens) ->
   _chisei = false
   res.send("ʕ ·(ｴ)· ʔ ｸﾏｰ")
 
+
+# コマンド：デバッグ切り替え
 toggleDebug = (res, tokens) ->
   _debug ^= true;
   if _debug
-    talk(res, "ｸﾏｰ", "デバッグ切り替えクマ")
+    talk(res, "ｸﾏｰ", "デバッグ切り替えクマ。サーバーログに変化クマ。")
 
 
 # コマンド：プルリク処理
 execPullRequest = (res, tokens) ->
+  if (_debug)
+    console.log('enter execPullRequest()')
+  
   order = parsePullRequestTokens(tokens)
   
   switch (order.cmd)
     when "show"
       showPullRequest(res, order)
+    when "merge"
+      mergePullRequest(res, order)
     else
-      noUnderstand(res, tokens)
+      noUnderstand(res)
 
 ## サブ：プルリクのトークン分解
 parsePullRequestTokens = (tokens) ->
   order =
     "cmd" : ""
     "target" : "all"
+    "firstNumeric" : ""
     "freeword" : []
 
   for token in tokens
     switch token
 
+    　when "全部"
+        order.target ="all"
+    　when "ぜんぶ"
+        order.target ="all"
+    　when "all"
+        order.target ="all"
+
+      when "みたい"
+        order.cmd = "show"
+      when "見たい"
+        order.cmd = "show"
       when "みせて"
+        order.cmd = "show"
+      when "見せて"
         order.cmd = "show"
       when "show"
         order.cmd = "show"
+
+      when "たべて"
+        order.cmd = "merge"
+      when "食べて"
+        order.cmd = "merge"
+      when "マージ"
+        order.cmd = "merge"
+      when "マージして"
+        order.cmd = "merge"
+      when "merge"
+        order.cmd = "merge"
       
       else
+        if order.firstNumeric != "" && token.match(/^\d+/)
+          order.firstNumeric = token
         order.freeword.push(token)
 
   return order
 
 ## サブコマンド：プルリクエストを見せる
 showPullRequest = (res, order) ->
-  pullrequests = []
-  canceled = false
+  if (_debug)
+    console.log('enter showPullRequest()')
 
   promise = new Promise((resolve, reject) ->    
     switch order.target
       when "all"
-        pullrequests = github.pullRequests.getAll({
+        github.pullRequests.getAll({
           "owner" : config.githubOwner
           "repo" : config.githubRepository
         }, (err, response) -> 
           if !err
-            resolve(response)
+            if _debug
+              console.log("get response")
+              console.log(response)
+            resolve(response.data)
           else
             reject(err)
         )
       else
-        pullrequests = github.pullRequests.get({
+        if order.firstNumeric == ""
+          noUnderstand(res)
+          return
+
+        github.pullRequests.get({
           "owner" : config.githubOwner
           "repo" : config.githubRepository
-          "number" : order.target
+          "number" : order.firstNumeric
         }, (err, response) -> 
           if !err
-            resolve(response)
+            if _debug
+              console.log("get response")
+              console.log(response)
+            resolve([response])
           else
             reject(err)
         )
   ).then(
     (pullrequests)-> 
       if pullrequests.length
-        res.send(pullrequests.map(req -> req.url)
+        res.send(pullrequests.map((req) -> req.html_url)
                              .join('\r\n'))
       else
-        talk(res, "っ[空箱]", "プルリクないクマ")
+        talk(res, "っ[空箱] ｶﾗｶﾗ", "プルリクないクマ")
     ,(reason)->
       error(res, err)
   )
-  
+
+# ## サブコマンド：プルリクエストをマージ
+mergePullRequest = (res, order) ->
+  if (_debug)
+    console.log('enter mergePullRequest()')
+
+  promise = new Promise((resolve, reject) ->    
+    switch order.target
+      when "all"
+        github.pullRequests.getAll({
+          "owner" : config.githubOwner
+          "repo" : config.githubRepository
+        }, (err, response) -> 
+          if !err
+            if _debug
+              console.log("get response")
+              console.log(response)
+            resolve(response.data)
+          else
+            reject(err)
+        )
+      else
+        if order.firstNumeric == ""
+          noUnderstand(res)
+          return
+
+        github.pullRequests.get({
+          "owner" : config.githubOwner
+          "repo" : config.githubRepository
+          "number" : order.firstNumeric
+        }, (err, response) -> 
+          if !err
+            if _debug
+              console.log("get response")
+              console.log(response)
+            resolve([response])
+          else
+            reject(err)
+        )
+  ).then(
+    (pullrequests) -> 
+      if !pullrequests.length
+        talk(res, "っ[空箱] ｶﾗｶﾗ", "プルリクないクマ")
+        return
+      
+      rejected = false
+
+      mergePromises = pullrequests.map(
+          (pullrequest) ->
+            return new Promise( (resolve, reject) -> 
+              github.pullRequests.merge({
+                "owner" : config.githubOwner
+                "repo" : config.githubRepository
+                "number" : pullrequest.number
+              }, (err, response) -> 
+                if !err
+                  resolve(pullrequest.html_url)
+                else
+                  if (!rejected)
+                    rejected = true
+                    reject(err)
+              )
+            )
+      )
+
+      return Promise.all(mergePromises)
+    ,(reason)->
+        error(res, err)
+  ).then(
+    (urls) -> 
+      msg = [
+          (_chisei) ? "全部食べたクマ。" : "ｸﾏｰ",
+          "```",
+          "numbers:"
+        ].concat(urls)
+        .concat(["```"])
+        .join("\r\n");
+
+    ,(reason)->
+      error(res, err)
+  )
