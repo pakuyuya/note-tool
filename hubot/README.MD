@@ -1,3 +1,8 @@
+## 概要
+
+チャットツールやSNSと連携できるBOTツール。
+
+
 ## 導入（yoman、generator-hubot経由）
 
 要約
@@ -19,50 +24,51 @@ Nodejsをインストールする。
   sudo npm install -y nodejs npm
   ```
 
-* hubot、coffeescript、yoman、generator-hubotをnpm経由でインストールする
+hubot、coffeescript、yoman、generator-hubotをnpm経由でインストールする
   
-  ```
-  sudo npm install -g hubot coffee-script yo generator-hubot
-  ```
+```
+sudo npm install -g hubot coffee-script yo generator-hubot
+```
 
-* hubotを配置したいディレクトリを作成
+hubotを配置したいディレクトリを作成
   
-  ```
-  mkdir my-hugot
-  ```
+```
+mkdir my-hugot
+```
 
-* 生成
+生成
   
-  ```
-  yo hubot
-  ```
+```
+yo hubot
+```
 
-* 質問にてきとーに答える。`Bot adapter` の質問までEnter連打でよい
+質問にてきとーに答える。`Bot adapter` の質問までEnter連打でよい
 
-* `Bot adapter`の質問がきたら、欲しいアダプターを回答する
-  テンプレートにいくつか準備がある。
+ただし、`Bot adapter`の質問がきたら、欲しいアダプターを回答する
+テンプレートにいくつか準備がある。
 
-  https://hubot.github.com/docs/adapters/
+* https://hubot.github.com/docs/adapters/
 
-  たとえば、Slackがほしければ `slack` と回答する。
+* たとえば、Slackがほしければ `slack` と回答する。
+
 
 以上で、hubotの導入が完了。
 
 
 ### 動かす
 
-* 環境変数に、必要なものをセットしておくこと。以下、SLACK例。
+環境変数に、必要なものをセットしておくこと。以下、SLACK例。
   
-  ```
-  export HUBOT_SLACK_TOKEN=xxxxx
-  # SlackのApp & integrationでGenerateしたものを設定する。
-  ```
+```
+export HUBOT_SLACK_TOKEN=xxxxx
+# SlackのApp & integrationでGenerateしたものを設定する。
+```
 
-* 動かす。以下、Slack例（※起動後、プロセスを殺すまでコンソールが帰ってきません。）
+動かす。以下、Slack例（※起動後、プロセスを殺すまでコンソールが帰ってきません。）
 
-  ```
-  bin/hubot --adapter slack
-  ```
+```
+bin/hubot --adapter slack
+```
 
-* デーモン化したければ、何かのコマンドを組み合わせてどうこうする。
-  NodeJS製であれば、`forever`とかが良いそう。
+デーモン化したければ、何かのコマンドを組み合わせてどうこうする。
+NodeJS製であれば、`forever`とかが良いそう。
