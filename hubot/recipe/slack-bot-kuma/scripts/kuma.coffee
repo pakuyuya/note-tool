@@ -32,7 +32,7 @@ module.exports = (robot) ->
 
 # 呼ばれたか判定
 isCall = (msg) ->
-  msg.match(/^(くまー?|kuma)([\s、,]|$)/)
+  msg.match(/^(くまー?|@?kuma)([\s、,]|$)/)
 
 
 # コマンドをディスパッチ
